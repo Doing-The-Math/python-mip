@@ -1518,7 +1518,11 @@ class SolverHighs(mip.Solver):
 
     def var_get_index(self: "SolverHighs", name: str) -> int:
         idx = ffi.new("int *")
-        self._lib.Highs_getColByName(self._model, name.encode("utf-8"), idx)
+        status = self._lib.Highs_getColByName(self._model, name.encode("utf-8"), idx)
+        if status == STATUS_ERROR:
+            # This means that no var with that name was found. Unfortunately,
+            # HiGHS::getColByName doesn't assign a value to idx in that case.
+            return -1
         return idx[0]
 
     def get_problem_name(self: "SolverHighs") -> str:
