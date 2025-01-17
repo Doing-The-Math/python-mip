@@ -1296,6 +1296,21 @@ def test_copy(solver):
 
 @skip_on(NotImplementedError)
 @pytest.mark.parametrize("solver", SOLVERS)
+def test_verbose(solver):
+    # set and get verbose flag
+    m = Model(solver_name=solver)
+
+    # active
+    m.verbose = 1
+    assert m.verbose == 1
+
+    # inactive
+    m.verbose = 0
+    assert m.verbose == 0
+
+
+@skip_on(NotImplementedError)
+@pytest.mark.parametrize("solver", SOLVERS)
 def test_constraint_with_lin_expr_and_lin_expr(solver):
     m = Model(solver_name=solver)
     x = m.add_var(name="x")
