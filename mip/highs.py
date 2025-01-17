@@ -1035,6 +1035,18 @@ class SolverHighs(mip.Solver):
         self._lib.Highs_setSolution(self._model, cval, ffi.NULL, ffi.NULL, ffi.NULL)
 
     def set_objective(self: "SolverHighs", lin_expr: "mip.LinExpr", sense: str = ""):
+        # first reset old objective (all 0)
+        n = self.num_cols()
+        costs = ffi.new("double[]", n)  # initialized to 0
+        check(
+            self._lib.Highs_changeColsCostByRange(
+                self._model,
+                0,  # from_col
+                n - 1,  # to_col
+                costs,
+            )
+        )
+
         # set coefficients
         for var, coef in lin_expr.expr.items():
             check(self._lib.Highs_changeColCost(self._model, var.idx, coef))
