@@ -720,7 +720,7 @@ class SolverHighs(mip.Solver):
         # Buffer string for storing names
         self._name_buffer = ffi.new(f"char[{self._lib.kHighsMaximumStringLength}]")
 
-        # type conversion maps
+        # type conversion maps (can not distinguish binary from integer!)
         self._var_type_map = {
             mip.CONTINUOUS: self._lib.kHighsVarTypeContinuous,
             mip.BINARY: self._lib.kHighsVarTypeInteger,
@@ -815,6 +815,8 @@ class SolverHighs(mip.Solver):
         if name:
             check(self._lib.Highs_passColName(self._model, col, name.encode("utf-8")))
         if var_type != mip.CONTINUOUS:
+            # Note that HiGHS doesn't distinguish binary and integer variables
+            # by type. There is only a boolean flag for "integrality".
             self._num_int_vars += 1
             check(
                 self._lib.Highs_changeColIntegrality(
