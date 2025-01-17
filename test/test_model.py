@@ -1356,6 +1356,7 @@ def test_objective(solver):
     m = Model(solver_name=solver, sense=MAXIMIZE)
     x = m.add_var(name="x", lb=0, ub=1)
     y = m.add_var(name="y", lb=0, ub=1)
+    z = m.add_var(name="z", lb=0, ub=1)
 
     m.objective = x - y + 0.5
     assert m.objective.x is None
@@ -1374,13 +1375,13 @@ def test_objective(solver):
 
 
     # Test changing the objective
-    m.objective = x + y + 1.5
+    m.objective = y + 2*z + 1.5
     m.sense = MINIMIZE
     # TODO: assert m.objective.sense == MINIMIZE
 
     assert len(m.objective.expr) == 2
-    assert m.objective.expr[x] == 1
     assert m.objective.expr[y] == 1
+    assert m.objective.expr[z] == 2
     assert m.objective.const == 1.5
 
     status = m.optimize()
