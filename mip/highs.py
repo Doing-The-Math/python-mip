@@ -760,8 +760,8 @@ class SolverHighs(mip.Solver):
         )
         return value[0]
 
-    def _get_bool_option_value(self: "SolverHighs", name: str) -> float:
-        value = ffi.new("bool*")
+    def _get_bool_option_value(self: "SolverHighs", name: str) -> int:
+        value = ffi.new("int*")
         check(
             self._lib.Highs_getBoolOptionValue(self._model, name.encode("UTF-8"), value)
         )
@@ -779,7 +779,7 @@ class SolverHighs(mip.Solver):
             )
         )
 
-    def _set_bool_option_value(self: "SolverHighs", name: str, value: float):
+    def _set_bool_option_value(self: "SolverHighs", name: str, value: int):
         check(
             self._lib.Highs_setBoolOptionValue(self._model, name.encode("UTF-8"), value)
         )
