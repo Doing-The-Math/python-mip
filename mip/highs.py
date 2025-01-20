@@ -720,7 +720,7 @@ class SolverHighs(mip.Solver):
         # Buffer string for storing names
         self._name_buffer = ffi.new(f"char[{self._lib.kHighsMaximumStringLength}]")
 
-        # type conversion maps
+        # type conversion maps (can not distinguish binary from integer!)
         self._var_type_map = {
             mip.CONTINUOUS: self._lib.kHighsVarTypeContinuous,
             mip.BINARY: self._lib.kHighsVarTypeInteger,
@@ -760,8 +760,8 @@ class SolverHighs(mip.Solver):
         )
         return value[0]
 
-    def _get_bool_option_value(self: "SolverHighs", name: str) -> float:
-        value = ffi.new("bool*")
+    def _get_bool_option_value(self: "SolverHighs", name: str) -> int:
+        value = ffi.new("int*")
         check(
             self._lib.Highs_getBoolOptionValue(self._model, name.encode("UTF-8"), value)
         )
@@ -779,7 +779,7 @@ class SolverHighs(mip.Solver):
             )
         )
 
-    def _set_bool_option_value(self: "SolverHighs", name: str, value: float):
+    def _set_bool_option_value(self: "SolverHighs", name: str, value: int):
         check(
             self._lib.Highs_setBoolOptionValue(self._model, name.encode("UTF-8"), value)
         )
@@ -815,6 +815,8 @@ class SolverHighs(mip.Solver):
         if name:
             check(self._lib.Highs_passColName(self._model, col, name.encode("utf-8")))
         if var_type != mip.CONTINUOUS:
+            # Note that HiGHS doesn't distinguish binary and integer variables
+            # by type. There is only a boolean flag for "integrality".
             self._num_int_vars += 1
             check(
                 self._lib.Highs_changeColIntegrality(
@@ -1035,6 +1037,18 @@ class SolverHighs(mip.Solver):
         self._lib.Highs_setSolution(self._model, cval, ffi.NULL, ffi.NULL, ffi.NULL)
 
     def set_objective(self: "SolverHighs", lin_expr: "mip.LinExpr", sense: str = ""):
+        # first reset old objective (all 0)
+        n = self.num_cols()
+        costs = ffi.new("double[]", n)  # initialized to 0
+        check(
+            self._lib.Highs_changeColsCostByRange(
+                self._model,
+                0,  # from_col
+                n - 1,  # to_col
+                costs,
+            )
+        )
+
         # set coefficients
         for var, coef in lin_expr.expr.items():
             check(self._lib.Highs_changeColCost(self._model, var.idx, coef))
@@ -1518,7 +1532,11 @@ class SolverHighs(mip.Solver):
 
     def var_get_index(self: "SolverHighs", name: str) -> int:
         idx = ffi.new("int *")
-        self._lib.Highs_getColByName(self._model, name.encode("utf-8"), idx)
+        status = self._lib.Highs_getColByName(self._model, name.encode("utf-8"), idx)
+        if status == STATUS_ERROR:
+            # This means that no var with that name was found. Unfortunately,
+            # HiGHS::getColByName doesn't assign a value to idx in that case.
+            return -1
         return idx[0]
 
     def get_problem_name(self: "SolverHighs") -> str:
