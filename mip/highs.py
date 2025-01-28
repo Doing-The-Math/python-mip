@@ -1337,7 +1337,11 @@ class SolverHighs(mip.Solver):
 
     def constr_get_index(self: "SolverHighs", name: str) -> int:
         idx = ffi.new("int *")
-        self._lib.Highs_getRowByName(self._model, name.encode("utf-8"), idx)
+        status = self._lib.Highs_getRowByName(self._model, name.encode("utf-8"), idx)
+        if status == STATUS_ERROR:
+            # This means that no constraint with that name was found. Unfortunately,
+            # Highs: getRowByName doesn't assign a value to idx in that case.
+            return  -1
         return idx[0]
 
     # Variable-related getters/setters
