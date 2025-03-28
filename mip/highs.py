@@ -1,6 +1,5 @@
 "Python-MIP interface to the HiGHS solver."
 
-import glob
 import numbers
 import logging
 import os.path
@@ -22,30 +21,22 @@ try:
         libfile = os.environ[ENV_KEY]
         logger.debug("Choosing HiGHS library {libfile} via {ENV_KEY}.")
     else:
-        # try library shipped with highspy packaged
-        import highspy
+        # Try library from highsbox, which is optional dependency.
+        import highsbox
+        root = highsbox.highs_dist_dir()
 
-        pkg_path = os.path.dirname(highspy.__file__)
-
-        # need library matching operating system
+        # Need library matching operating system.
+        # Following: PyOptInterface/src/pyoptinterface/_src/highs.py
         platform = sys.platform.lower()
         if "linux" in platform:
-            patterns = ["highs_bindings.*.so", "_core.*.so"]
+            libfile = os.path.join(root, "lib", "libhighs.so")
         elif platform.startswith("win"):
-            patterns = ["highs_bindings.*.pyd", "_core.*.pyd"]
+            libfile = os.path.join(root, "bin", "highs.dll")
         elif any(platform.startswith(p) for p in ("darwin", "macos")):
-            patterns = ["highs_bindings.*.so", "_core.*.so"]
+            libfile = os.path.join(root, "lib", "libhighs.dylib")
         else:
             raise NotImplementedError(f"{sys.platform} not supported!")
-
-        # there should only be one match
-        matched_files = []
-        for pattern in patterns:
-            matched_files.extend(glob.glob(os.path.join(pkg_path, pattern)))
-        if len(matched_files) != 1:
-            raise FileNotFoundError(f"Could not find HiGHS library in {pkg_path}.")
-        [libfile] = matched_files
-        logger.debug("Choosing HiGHS library {libfile} via highspy package.")
+        logger.debug("Choosing HiGHS library {libfile} via highsbox package.")
 
     highslib = ffi.dlopen(libfile)
     has_highs = True
