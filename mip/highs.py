@@ -678,6 +678,7 @@ if has_highs:
 def check(status):
     if status == STATUS_ERROR:
         raise mip.InterfacingError("Unknown error in call to HiGHS.")
+    return status
 
 
 class SolverHighs(mip.Solver):
@@ -1431,12 +1432,15 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_changeColCost(self._model, var.idx, value))
 
     def var_get_var_type(self: "SolverHighs", var: "mip.Var") -> str:
+        # Highs_getColIntegrality only works if some variable is not continuous.
+        # Since we want this method to always work, we need to catch this case first.
+        if self._num_int_vars == 0:
+            return mip.CONTINUOUS
+
         var_type = ffi.new("int*")
-        ret = self._lib.Highs_getColIntegrality(self._model, var.idx, var_type)
+        check(self._lib.Highs_getColIntegrality(self._model, var.idx, var_type))
         if var_type[0] not in self._highs_type_map:
-            raise ValueError(
-                f"Invalid variable type returned by HiGHS: {var_type[0]} (ret={ret})"
-            )
+            raise ValueError(f"Invalid variable type returned by HiGHS: {var_type[0]}.")
         return self._highs_type_map[var_type[0]]
 
     def var_set_var_type(self: "SolverHighs", var: "mip.Var", value: str):
