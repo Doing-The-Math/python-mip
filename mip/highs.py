@@ -1432,6 +1432,11 @@ class SolverHighs(mip.Solver):
         check(self._lib.Highs_changeColCost(self._model, var.idx, value))
 
     def var_get_var_type(self: "SolverHighs", var: "mip.Var") -> str:
+        # Highs_getColIntegrality only works if some variable is not continuous.
+        # Since we want this method to always work, we need to catch this case first.
+        if self._num_int_vars == 0:
+            return mip.CONTINUOUS
+
         var_type = ffi.new("int*")
         check(self._lib.Highs_getColIntegrality(self._model, var.idx, var_type))
         if var_type[0] not in self._highs_type_map:
