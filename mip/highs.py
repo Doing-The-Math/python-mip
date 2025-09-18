@@ -23,6 +23,7 @@ try:
     else:
         # Try library from highsbox, which is optional dependency.
         import highsbox
+
         root = highsbox.highs_dist_dir()
 
         # Need library matching operating system.
@@ -1333,7 +1334,7 @@ class SolverHighs(mip.Solver):
         if status == STATUS_ERROR:
             # This means that no constraint with that name was found. Unfortunately,
             # Highs: getRowByName doesn't assign a value to idx in that case.
-            return  -1
+            return -1
         return idx[0]
 
     # Variable-related getters/setters
